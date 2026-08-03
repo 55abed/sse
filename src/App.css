@@ -1,38 +1,191 @@
-.App {
-  text-align: center;
+/* =========================================================
+   1. GLOBAL STYLES & RESETS
+========================================================= */
+
+html {
+    scroll-behavior: smooth;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+html,
+body,
+#root {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    overflow-x: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: #f8f9fa;
+    color: #333333;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+* {
+    box-sizing: border-box;
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+/* Scroll offset to prevent sticky navbar from hiding section headings */
+#get-in-touch,
+#contact,
+#financial,
+#basic,
+#shop {
+    scroll-margin-top: 90px;
 }
 
-.App-link {
-  color: #61dafb;
+/* =========================================================
+   2. BOOTSTRAP LAYOUT OVERRIDES
+========================================================= */
+
+.container,
+.container-fluid {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.row {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+
+.navbar {
+    margin-bottom: 0 !important;
+}
+
+/* =========================================================
+   3. CAROUSEL & HERO BANNERS
+========================================================= */
+
+.carousel,
+.carousel-inner,
+.carousel-item {
+    margin: 0;
+    padding: 0;
+}
+
+.carousel img {
+    width: 100%;
+    display: block;
+}
+
+/* Enhanced Custom Banner Wrapper (For Carousel Images) */
+.carousel-banner-wrapper {
+    position: relative;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 15px 35px rgba(0, 102, 102, 0.15), 0 5px 15px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(0, 168, 168, 0.2);
+    transition: all 0.4s ease;
+}
+
+.carousel-banner-img {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+    transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.carousel-banner-wrapper:hover .carousel-banner-img {
+    transform: scale(1.02);
+}
+
+/* =========================================================
+   4. PREMIUM SERVICE CARDS
+========================================================= */
+
+.service-card {
+    background: #ffffff;
+    border: none;
+    border-radius: 18px;
+    overflow: hidden;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.4s ease;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+}
+
+.service-card::before {
+    content: "";
+    display: block;
+    width: 60px;
+    height: 5px;
+    margin: 25px auto 20px;
+    background: #198754; /* Bootstrap Success Green Accent */
+    border-radius: 20px;
+    transition: all 0.4s ease;
+}
+
+.service-card:hover::before {
+    width: 100px;
+}
+
+.service-card:hover {
+    transform: translateY(-15px);
+    box-shadow: 0 28px 55px rgba(0, 0, 0, 0.18);
+}
+
+.service-card .card-body {
+    padding: 35px 25px;
+    transition: all 0.4s ease;
+}
+
+.service-card:hover .card-body {
+    transform: scale(1.04);
+}
+
+.service-card h4 {
+    color: #222222;
+    font-weight: 700;
+    margin-bottom: 18px;
+    transition: all 0.4s ease;
+}
+
+.service-card:hover h4 {
+    color: #198754;
+}
+
+.service-card p {
+    color: #666666;
+    font-size: 15px;
+    line-height: 1.7;
+    transition: all 0.4s ease;
+}
+
+.service-card:hover p {
+    color: #444444;
+}
+
+/* Smooth appearance fallback */
+.service-card,
+.service-card::before,
+.service-card .card-body,
+.service-card h4,
+.service-card p {
+    transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+/* =========================================================
+   5. RESPONSIVE MEDIA QUERIES
+========================================================= */
+
+@media (max-width: 992px) {
+    .service-card {
+        margin-bottom: 20px;
+    }
+
+    .service-card .card-body {
+        padding: 30px 20px;
+    }
+}
+
+@media (max-width: 768px) {
+    .service-card:hover {
+        transform: translateY(-8px);
+    }
+
+    .service-card h4 {
+        font-size: 1.3rem;
+    }
+    
+    .carousel-banner-wrapper {
+        border-radius: 12px;
+    }
 }
