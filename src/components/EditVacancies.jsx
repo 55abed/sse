@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom"; // Added react-router-dom import
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 const EditVacancies = () => {
-  const navigate = useNavigate(); // Hook for navigation
+  const navigate = useNavigate();
 
   const [courses, setCourses] = useState([]);
   const [search, setSearch] = useState("");
@@ -161,7 +161,6 @@ const EditVacancies = () => {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        {/* Redirects to /addcoursevacancy on click */}
         <button
           className="btn btn-success fw-bold"
           onClick={() => navigate("/addcoursevacancy")}
@@ -245,7 +244,11 @@ const EditVacancies = () => {
               </div>
 
               <form onSubmit={handleManualEnrollSubmit}>
-                <div className="modal-body bg-light text-start p-4">
+                {/* Scrollable Container Added Here */}
+                <div 
+                  className="modal-body bg-light text-start p-4"
+                  style={{ maxHeight: "70vh", overflowY: "auto" }}
+                >
                   <div className="row g-3">
                     {/* Full Name */}
                     <div className="col-md-6">

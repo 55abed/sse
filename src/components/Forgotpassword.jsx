@@ -6,35 +6,46 @@ const ForgotPassword = () => {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState("");
+  const [resetLink, setResetLink] = useState("");
   const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setSuccess("");
+    setResetLink("");
     setError("");
-
-    const formData = new FormData();
-    formData.append("email", email);
 
     try {
       const response = await axios.post(
         "https://abedhiggs.alwaysdata.net/sseapis/forgotpassword.php",
-        formData
+        { email: email },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
       );
-      setLoading(false);
 
       if (response.data.success) {
         setSuccess(
-          "We have sent a password reset link to your email address. Please check your inbox and spam folder."
+          response.data.message ||
+            "We have sent a password reset link to your email address."
         );
+        // Capture link fallback if returned for localhost testing
+        if (response.data.reset_link) {
+          setResetLink(response.data.reset_link);
+        }
         setEmail("");
       } else {
         setError(response.data.message || "Unable to process your request.");
       }
     } catch (err) {
+      const serverMsg =
+        err.response?.data?.message || "Server error. Please try again later.";
+      setError(serverMsg);
+    } finally {
       setLoading(false);
-      setError("Server error. Please try again later.");
     }
   };
 
@@ -70,9 +81,19 @@ const ForgotPassword = () => {
 
                 {/* Success Alert */}
                 {success && (
-                  <div className="alert alert-success d-flex align-items-center text-start shadow-sm border-0 rounded-3 p-3 mb-4" role="alert">
-                    <i className="bi bi-check-circle-fill flex-shrink-0 me-3 fs-4 text-success"></i>
-                    <div className="small">{success}</div>
+                  <div className="alert alert-success d-flex flex-column text-start shadow-sm border-0 rounded-3 p-3 mb-4" role="alert">
+                    <div className="d-flex align-items-center mb-1">
+                      <i className="bi bi-check-circle-fill flex-shrink-0 me-2 fs-5 text-success"></i>
+                      <div className="fw-bold">{success}</div>
+                    </div>
+                    {resetLink && (
+                      <div className="mt-2 pt-2 border-top border-success-subtle small text-break">
+                        <strong>Development Link:</strong>{" "}
+                        <a href={resetLink} target="_blank" rel="noopener noreferrer" className="text-success fw-semibold">
+                          {resetLink}
+                        </a>
+                      </div>
+                    )}
                   </div>
                 )}
 

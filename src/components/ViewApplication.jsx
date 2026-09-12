@@ -5,12 +5,9 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 const ViewApplication = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
-
     const id = searchParams.get("id");
-
     const [application, setApplication] = useState(null);
     const [loading, setLoading] = useState("Loading application...");
-
     const loadApplication = useCallback(() => {
         axios
             .get(`https://abedhiggs.alwaysdata.net/sseapis/getapplication.php?id=${id}`)
@@ -28,11 +25,9 @@ const ViewApplication = () => {
                 alert("Unable to load application.");
             });
     }, [id]);
-
     useEffect(() => {
         loadApplication();
     }, [loadApplication]);
-
     const updateStatus = (status) => {
         if (
             !window.confirm(
@@ -41,7 +36,6 @@ const ViewApplication = () => {
         ) {
             return;
         }
-
         axios
             .post(
                 "https://abedhiggs.alwaysdata.net/sseapis/updateapplicationstatus.php",
@@ -58,7 +52,6 @@ const ViewApplication = () => {
                 alert("Unable to update application.");
             });
     };
-
     if (loading !== "") {
         return (
             <div className="container mt-5">
@@ -66,7 +59,6 @@ const ViewApplication = () => {
             </div>
         );
     }
-
     if (!application) {
         return (
             <div className="container mt-5">
@@ -76,14 +68,12 @@ const ViewApplication = () => {
             </div>
         );
     }
-
     return (
         <div className="container mt-5 mb-5">
             <div className="card shadow">
                 <div className="card-header bg-success text-white">
                     <h3>Student Application</h3>
                 </div>
-
                 <div className="card-body">
                     <table className="table table-bordered">
                         <tbody>
@@ -91,62 +81,50 @@ const ViewApplication = () => {
                                 <th>Course</th>
                                 <td>{application.course}</td>
                             </tr>
-
                             <tr>
                                 <th>Full Name</th>
                                 <td>{application.fullname}</td>
                             </tr>
-
                             <tr>
                                 <th>Email</th>
                                 <td>{application.email}</td>
                             </tr>
-
                             <tr>
                                 <th>Phone</th>
                                 <td>{application.phone}</td>
                             </tr>
-
                             <tr>
                                 <th>ID Number</th>
                                 <td>{application.idnumber}</td>
                             </tr>
-
                             <tr>
                                 <th>Gender</th>
                                 <td>{application.gender}</td>
                             </tr>
-
                             <tr>
                                 <th>Date of Birth</th>
                                 <td>{application.dob}</td>
                             </tr>
-
                             <tr>
                                 <th>County</th>
                                 <td>{application.county}</td>
                             </tr>
-
                             <tr>
                                 <th>Education</th>
                                 <td>{application.education}</td>
                             </tr>
-
                             <tr>
                                 <th>Next of Kin</th>
                                 <td>{application.nextofkin}</td>
                             </tr>
-
                             <tr>
                                 <th>Next of Kin Phone</th>
                                 <td>{application.nextphone}</td>
                             </tr>
-
                             <tr>
                                 <th>Reason</th>
                                 <td>{application.reason}</td>
                             </tr>
-
                             <tr>
                                 <th>Status</th>
                                 <td>
@@ -155,13 +133,11 @@ const ViewApplication = () => {
                                             Accepted
                                         </span>
                                     )}
-
                                     {application.status === "Rejected" && (
                                         <span className="badge bg-danger">
                                             Rejected
                                         </span>
                                     )}
-
                                     {application.status === "Pending" && (
                                         <span className="badge bg-warning text-dark">
                                             Pending

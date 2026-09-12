@@ -322,8 +322,6 @@ const ComputerServices = ({ user: propUser }) => {
                   <option value="Networking">Networking</option>
                   <option value="Computer Repair">Computer Repair</option>
                   <option value="Software Installation">Software Installation</option>
-                  <option value="Data Recovery">Data Recovery</option>
-                  <option value="Custom Built PC">Custom Built PC</option>
                 </select>
               </div>
 

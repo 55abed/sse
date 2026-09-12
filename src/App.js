@@ -12,6 +12,7 @@ import Signup from "./components/Signup";
 import Signin from "./components/Signin";
 import ForgotPassword from "./components/Forgotpassword";
 import Reset from "./components/Reset";
+import ChangeDetails from "./components/ChangeDetails";
 import Getproducts from "./components/Getproducts";
 import Cart from "./components/Cart";
 import Mpesapayment from "./components/Mpesapayment";
@@ -139,7 +140,7 @@ function App() {
     return children;
   };
 
-  // 4. Clean helper wrapper for User-only routes (like payments)
+  // 4. Clean helper wrapper for User-only routes (like payments & profile settings)
   const ProtectedRoute = ({ children }) => {
     if (!user) {
       return <Navigate to="/signin" replace />;
@@ -184,6 +185,17 @@ function App() {
           <Route path="/my-orders" element={<MyOrders />} />
 
           {/* Protected Customer Routes */}
+          <Route 
+            path="/change-details" 
+            element={
+              <ProtectedRoute>
+                <ChangeDetails />
+              </ProtectedRoute>
+            } 
+          />
+          {/* Redirect legacy /change-email path to /change-details */}
+          <Route path="/change-email" element={<Navigate to="/change-details" replace />} />
+
           <Route 
             path="/makepayment" 
             element={

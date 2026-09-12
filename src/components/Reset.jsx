@@ -24,6 +24,11 @@ const Reset = () => {
       return;
     }
 
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters long.");
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError("Passwords do not match. Please check and try again.");
       return;
@@ -31,16 +36,20 @@ const Reset = () => {
 
     setLoading(true);
 
-    const formData = new FormData();
-    formData.append("token", token);
-    formData.append("password", password);
-
     try {
+      // Post directly as JSON payload matching php://input in resetpassword.php
       const response = await axios.post(
         "https://abedhiggs.alwaysdata.net/sseapis/resetpassword.php",
-        formData
+        {
+          token: token,
+          password: password,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
       );
-      setLoading(false);
 
       if (response.data.success) {
         setSuccess(response.data.message || "Password reset successfully!");
@@ -51,8 +60,12 @@ const Reset = () => {
         setError(response.data.message || "Unable to reset password.");
       }
     } catch (err) {
+      // Capture detailed server message if returned by API
+      const serverMsg =
+        err.response?.data?.message || "Server connection error. Please try again later.";
+      setError(serverMsg);
+    } finally {
       setLoading(false);
-      setError("Server error. Please try again later.");
     }
   };
 
@@ -103,7 +116,7 @@ const Reset = () => {
                     <div className="small">
                       {success}
                       <br />
-                      <span className="text-muted mt-1 d-inline-block">Redirecting to login...</span>
+                      <span className="text-muted mt-1 d-inline-block">Redirecting to sign in...</span>
                     </div>
                   </div>
                 )}

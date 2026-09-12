@@ -216,7 +216,7 @@ const Cyber = () => {
                     </div>
                     <h5 className="fw-bold text-dark">Physical Location</h5>
                     <p className="text-muted small mb-0">
-                      Stanley &amp; Edricks Consultants Stall,Ekero,Mission Hospital Road,Mumias.
+                      Stanley &amp; Edricks Consultants Stall,Ekero,Along main road to Mission Hospital Road,Mumias.
                     </p>
                   </div>
                 </div>

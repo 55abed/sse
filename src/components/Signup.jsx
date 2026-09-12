@@ -14,6 +14,49 @@ const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
+  // Password requirements checklist state
+  const requirements = [
+    { label: "At least 8 characters", valid: password.length >= 8 },
+    { label: "At least one uppercase letter", valid: /[A-Z]/.test(password) },
+    { label: "At least one lowercase letter", valid: /[a-z]/.test(password) },
+    { label: "At least one number", valid: /\d/.test(password) },
+    { label: "At least one special character (!@#$%^&*)", valid: /[!@#$%^&*]/.test(password) },
+  ];
+
+  const checkPasswordStrength = (pass) => {
+    const passedCount = [
+      pass.length >= 8,
+      /[A-Z]/.test(pass),
+      /[a-z]/.test(pass),
+      /\d/.test(pass),
+      /[!@#$%^&*]/.test(pass),
+    ].filter(Boolean).length;
+
+    if (pass.length === 0) {
+      setStrength("");
+    } else if (passedCount <= 2) {
+      setStrength("Weak");
+    } else if (passedCount <= 4) {
+      setStrength("Medium");
+    } else {
+      setStrength("Strong");
+    }
+  };
+
+  const handlePasswordChange = (value) => {
+    setPassword(value);
+    checkPasswordStrength(value);
+  };
+
+  // Helper to generate and set a strong password
+  const handleSuggestPassword = () => {
+    const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+    let suggested = "A1!" + Array.from({ length: 9 }, () => chars.charAt(Math.floor(Math.random() * chars.length))).join("");
+    suggested = suggested.split("").sort(() => 0.5 - Math.random()).join("");
+    
+    handlePasswordChange(suggested);
+  };
+
   const handlesubmit = async (e) => {
     e.preventDefault();
     setLoading("Please wait.....");
@@ -34,7 +77,6 @@ const Signup = () => {
       setLoading("");
       setSuccess(response.data.message);
 
-      // Auto login only if signup is successful
       if (response.data.success) {
         localStorage.setItem(
           "user",
@@ -53,19 +95,6 @@ const Signup = () => {
     }
   };
 
-  const checkPasswordStrength = (password) => {
-    if (password.length === 0) {
-      setStrength("");
-    } else if (password.length < 4) {
-      setStrength("Weak");
-    } else if (password.length < 8) {
-      setStrength("Medium");
-    } else {
-      setStrength("Strong");
-    }
-  };
-
-  // Utility helpers for visual password meter styling
   const getStrengthBadgeClass = () => {
     switch (strength) {
       case "Weak":
@@ -94,7 +123,6 @@ const Signup = () => {
 
   return (
     <div className="container py-5">
-      {/* Custom Styles */}
       <style>{`
         .auth-card {
           border: none;
@@ -122,7 +150,6 @@ const Signup = () => {
         <div className="col-12 col-md-8 col-lg-5">
           <div className="card auth-card p-4 p-md-5">
             
-            {/* Header Icon & Title */}
             <div className="text-center mb-4">
               <div
                 className="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-circle mb-3"
@@ -136,7 +163,6 @@ const Signup = () => {
               </p>
             </div>
 
-            {/* Alert Status Banners */}
             {loading && (
               <div
                 className="alert alert-info d-flex align-items-center rounded-3 py-2 px-3 mb-3"
@@ -170,7 +196,6 @@ const Signup = () => {
               </div>
             )}
 
-            {/* Signup Form */}
             <form onSubmit={handlesubmit}>
               
               {/* Username Input */}
@@ -186,6 +211,7 @@ const Signup = () => {
                     type="text"
                     className="form-control border-start-0 ps-0"
                     placeholder="Enter username"
+                    value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     required
                   />
@@ -205,6 +231,7 @@ const Signup = () => {
                     type="email"
                     className="form-control border-start-0 ps-0"
                     placeholder="Enter email address"
+                    value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
                   />
@@ -224,17 +251,28 @@ const Signup = () => {
                     type="tel"
                     className="form-control border-start-0 ps-0"
                     placeholder="Enter phone number"
+                    value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     required
                   />
                 </div>
               </div>
 
-              {/* Password Input */}
+              {/* Password Input with Suggest Button */}
               <div className="mb-3">
-                <label className="form-label text-secondary small fw-bold">
-                  Password
-                </label>
+                <div className="d-flex justify-content-between align-items-center mb-1">
+                  <label className="form-label text-secondary small fw-bold mb-0">
+                    Password
+                  </label>
+                  <button
+                    type="button"
+                    className="btn btn-link p-0 text-decoration-none small text-primary fw-semibold"
+                    onClick={handleSuggestPassword}
+                  >
+                    <i className="bi bi-magic me-1"></i>Suggest Strong Password
+                  </button>
+                </div>
+
                 <div className="input-group">
                   <span className="input-group-text bg-light text-muted border-end-0">
                     <i className="bi bi-lock"></i>
@@ -243,16 +281,15 @@ const Signup = () => {
                     type={showPassword ? "text" : "password"}
                     className="form-control border-start-0 border-end-0 ps-0"
                     placeholder="Enter password"
-                    onChange={(e) => {
-                      setPassword(e.target.value);
-                      checkPasswordStrength(e.target.value);
-                    }}
+                    value={password}
+                    onChange={(e) => handlePasswordChange(e.target.value)}
                     required
                   />
                   <button
                     type="button"
                     className="btn btn-light border border-start-0 text-muted"
                     onClick={() => setShowPassword(!showPassword)}
+                    tabIndex="-1"
                   >
                     <i
                       className={showPassword ? "bi bi-eye-slash" : "bi bi-eye"}
@@ -260,7 +297,7 @@ const Signup = () => {
                   </button>
                 </div>
 
-                {/* Password Strength Progress Indicator */}
+                {/* Password Strength Progress Bar */}
                 {password && (
                   <div className="mt-2">
                     <div className="d-flex justify-content-between align-items-center mb-1">
@@ -289,6 +326,30 @@ const Signup = () => {
                     </div>
                   </div>
                 )}
+
+                {/* Requirements Checklist */}
+                <div className="p-3 bg-light rounded-3 mt-3">
+                  <p className="small text-secondary fw-bold mb-2" style={{ fontSize: "0.75rem" }}>
+                    Password must entail:
+                  </p>
+                  <ul className="list-unstyled mb-0" style={{ fontSize: "0.75rem" }}>
+                    {requirements.map((req, idx) => (
+                      <li
+                        key={idx}
+                        className={`d-flex align-items-center mb-1 ${
+                          req.valid ? "text-success" : "text-muted"
+                        }`}
+                      >
+                        <i
+                          className={`bi ${
+                            req.valid ? "bi-check-circle-fill me-2" : "bi-circle me-2"
+                          }`}
+                        ></i>
+                        {req.label}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
 
               {/* Submit Button */}
