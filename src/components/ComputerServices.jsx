@@ -45,7 +45,7 @@ const ComputerServices = ({ user: propUser }) => {
   const fetchServices = async () => {
     try {
       setLoading(true);
-      const res = await axios.get("https://abedhiggs.alwaysdata.net/sseapis/getservices.php");
+      const res = await axios.get(`https://abedhiggs.alwaysdata.net/sseapis/getservices.php?t=${Date.now()}`);
       if (Array.isArray(res.data)) {
         setServices(res.data);
       } else {
@@ -58,12 +58,15 @@ const ComputerServices = ({ user: propUser }) => {
     }
   };
 
-  // Filtered services for real-time search & dropdown suggestions
-  const filteredServices = services.filter((srv) =>
-    srv.service_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    srv.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    srv.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Safe search filtering
+  const filteredServices = services.filter((srv) => {
+    const term = searchTerm.toLowerCase();
+    const name = (srv.service_name || "").toLowerCase();
+    const category = (srv.category || "").toLowerCase();
+    const description = (srv.description || "").toLowerCase();
+
+    return name.includes(term) || category.includes(term) || description.includes(term);
+  });
 
   /* ================= ADMIN HANDLERS ================= */
   const handleInputChange = (e) => {
@@ -96,6 +99,7 @@ const ComputerServices = ({ user: propUser }) => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  // UPDATED: Sends clean JSON matching PHP expects via php://input
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.service_name || !formData.price || !formData.description) {
@@ -103,38 +107,72 @@ const ComputerServices = ({ user: propUser }) => {
       return;
     }
 
+    const payload = {
+      service_name: formData.service_name,
+      category: formData.category,
+      price: parseFloat(formData.price),
+      description: formData.description,
+      image_url: formData.image_url,
+    };
+
     try {
+      let endpoint = "https://abedhiggs.alwaysdata.net/sseapis/addservice.php";
+
       if (editingService) {
-        await axios.post("https://abedhiggs.alwaysdata.net/sseapis/updateservice.php", {
-          service_id: editingService.service_id,
-          ...formData,
-        });
-        alert("Service updated successfully!");
-      } else {
-        await axios.post("https://abedhiggs.alwaysdata.net/sseapis/addservice.php", formData);
-        alert("New service added successfully!");
+        endpoint = "https://abedhiggs.alwaysdata.net/sseapis/updateservice.php";
+        payload.service_id = parseInt(editingService.service_id, 10);
       }
 
+      const response = await axios.post(endpoint, payload, {
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (response.data && response.data.status === "error") {
+        alert("Server error: " + response.data.message);
+        return;
+      }
+
+      alert(editingService ? "Service updated successfully!" : "New service added successfully!");
+
+      // Reset form state
       setShowForm(false);
       setEditingService(null);
-      fetchServices();
+      setFormData({
+        service_name: "",
+        category: "Computer Repair",
+        price: "",
+        description: "",
+        image_url: "",
+      });
+
+      // Refresh service list
+      await fetchServices();
     } catch (err) {
-      console.error("Error saving service:", err);
-      alert("Failed to save service.");
+      console.error("Error saving service:", err.response?.data || err);
+      alert("Failed to save service: " + (err.response?.data?.message || "Please check server connection."));
     }
   };
 
+  // UPDATED: Sends JSON payload for deletion
   const handleDelete = async (serviceId) => {
     if (!window.confirm("Are you sure you want to delete this service?")) return;
 
     try {
-      await axios.post("https://abedhiggs.alwaysdata.net/sseapis/deleteservice.php", {
-        service_id: serviceId,
+      const payload = { service_id: parseInt(serviceId, 10) };
+
+      const response = await axios.post("https://abedhiggs.alwaysdata.net/sseapis/deleteservice.php", payload, {
+        headers: { "Content-Type": "application/json" },
       });
+
+      if (response.data && response.data.status === "error") {
+        alert("Delete failed: " + response.data.message);
+        return;
+      }
+
       alert("Service deleted successfully.");
-      fetchServices();
+      await fetchServices();
     } catch (err) {
-      console.error("Error deleting service:", err);
+      console.error("Error deleting service:", err.response?.data || err);
       alert("Failed to delete service.");
     }
   };
@@ -177,8 +215,10 @@ const ComputerServices = ({ user: propUser }) => {
 
     try {
       setSubmittingBooking(true);
-      const response = await axios.post("https://abedhiggs.alwaysdata.net/sseapis/bookservice.php", payload);
-      
+      const response = await axios.post("https://abedhiggs.alwaysdata.net/sseapis/bookservice.php", payload, {
+        headers: { "Content-Type": "application/json" },
+      });
+
       if (response.data && response.data.status === "error") {
         alert("Booking failed: " + response.data.message);
       } else {
@@ -206,7 +246,7 @@ const ComputerServices = ({ user: propUser }) => {
           Professional repair, networking, and IT support services tailored to your needs.
         </p>
 
-        {/* Real-time Search Box with Dropdown Suggestions */}
+        {/* Real-time Search Box */}
         <div className="row justify-content-center mt-4">
           <div className="col-md-6 position-relative">
             <div className="input-group shadow-sm rounded-pill overflow-hidden border">
@@ -235,9 +275,9 @@ const ComputerServices = ({ user: propUser }) => {
               )}
             </div>
 
-            {/* Real-time Dropdown Suggestions */}
+            {/* Dropdown Suggestions */}
             {isSearching && searchTerm.trim() !== "" && (
-              <div 
+              <div
                 className="position-absolute w-100 bg-white shadow-lg rounded-4 mt-2 border start-0 overflow-hidden text-start"
                 style={{ zIndex: 1000, maxHeight: "300px", overflowY: "auto" }}
               >
@@ -245,14 +285,14 @@ const ComputerServices = ({ user: propUser }) => {
                   filteredServices.map((srv) => (
                     <div
                       key={srv.service_id}
-                      className="p-3 border-bottom d-flex justify-content-between align-items-center hover-bg cursor-pointer"
+                      className="p-3 border-bottom d-flex justify-content-between align-items-center cursor-pointer"
                       style={{ cursor: "pointer", transition: "background 0.2s" }}
                       onClick={() => {
                         setSearchTerm(srv.service_name);
                         setIsSearching(false);
                       }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f8f9fa"}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f8f9fa")}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
                     >
                       <div>
                         <h6 className="mb-0 fw-bold text-dark">{srv.service_name}</h6>
@@ -261,7 +301,7 @@ const ComputerServices = ({ user: propUser }) => {
                         </small>
                       </div>
                       <span className="badge bg-success bg-opacity-10 text-success fw-bold">
-                        KSh {parseFloat(srv.price).toLocaleString()}
+                        KSh {parseFloat(srv.price || 0).toLocaleString()}
                       </span>
                     </div>
                   ))
@@ -433,7 +473,7 @@ const ComputerServices = ({ user: propUser }) => {
                       {srv.category}
                     </span>
                     <span className="fw-bold text-success fs-5">
-                      KSh {parseFloat(srv.price).toLocaleString()}
+                      KSh {parseFloat(srv.price || 0).toLocaleString()}
                     </span>
                   </div>
 
@@ -453,7 +493,7 @@ const ComputerServices = ({ user: propUser }) => {
         </div>
       )}
 
-      {/* ================= BOOKING MODAL ================= */}
+      {/* Booking Modal */}
       {showBookingModal && selectedService && (
         <div
           className="modal fade show d-block"
@@ -479,7 +519,7 @@ const ComputerServices = ({ user: propUser }) => {
                     <div>
                       <small className="text-muted d-block">Estimated Service Cost</small>
                       <strong className="text-success fs-5">
-                        KSh {parseFloat(selectedService.price).toLocaleString()}
+                        KSh {parseFloat(selectedService.price || 0).toLocaleString()}
                       </strong>
                     </div>
                     <span className="badge bg-info bg-opacity-10 text-info px-3 py-2 rounded-pill">

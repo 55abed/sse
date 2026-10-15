@@ -17,17 +17,11 @@ const AdminApplications = () => {
 
     try {
       const response = await axios.get("https://abedhiggs.alwaysdata.net/sseapis/getapplications.php");
-      
-      console.log("RAW API RESPONSE:", response.data);
-
       const responseData = response.data;
       
-      // Extract array safely from multiple possible formats (Direct array, nested under applications, data, or result)
       const appList = Array.isArray(responseData) 
         ? responseData 
         : (responseData.applications || responseData.data || responseData.result || []);
-
-      console.log("PARSED APPLICATION LIST:", appList);
 
       if (appList.length > 0) {
         setApplications(appList);
@@ -47,19 +41,31 @@ const AdminApplications = () => {
     loadApplications();
   }, []);
 
+  // Update Application or Student Status
   const updateStatus = async (id, status) => {
-    if (!window.confirm(`Are you sure you want to change status to ${status}?`)) return;
+    let initialTotalFee = 0;
+
+    if (status === "Accepted") {
+      const input = window.prompt("Enter Total Course Fee (KSH) for this student:", "15000");
+      if (input === null) return;
+      initialTotalFee = parseFloat(input) || 0;
+    } else if (status !== "In School" && status !== "Completed" && status !== "Dropped Out") {
+      if (!window.confirm(`Are you sure you want to set application status to ${status}?`)) return;
+    }
 
     const formData = new FormData();
     formData.append("id", id);
     formData.append("status", status);
+    if (status === "Accepted") {
+      formData.append("totalFee", initialTotalFee);
+    }
 
     try {
       const response = await axios.post("https://abedhiggs.alwaysdata.net/sseapis/updateapplicationstatus.php", formData);
       alert(response.data.message || "Status updated successfully!");
       loadApplications();
     } catch (err) {
-      alert("Unable to update application status.");
+      alert("Unable to update status.");
     }
   };
 
@@ -74,15 +80,15 @@ const AdminApplications = () => {
       const response = await axios.post("https://abedhiggs.alwaysdata.net/sseapis/updateapplicationstatus.php", formData);
       alert(response.data.message);
       setPaymentInput("");
-      loadApplications();
       
-      // Refresh modal view data
       const updatedRes = await axios.get("https://abedhiggs.alwaysdata.net/sseapis/getapplications.php");
       const updatedData = updatedRes.data;
       const appList = Array.isArray(updatedData) 
         ? updatedData 
         : (updatedData.applications || updatedData.data || updatedData.result || []);
       
+      setApplications(appList);
+
       const refreshed = appList.find(app => String(app.id) === String(id));
       if (refreshed) {
         setSelectedApp(refreshed);
@@ -111,10 +117,11 @@ const AdminApplications = () => {
                   <th>ID</th>
                   <th>Student</th>
                   <th>Course</th>
-                  <th>Status</th>
+                  <th>App Status</th>
+                  <th>Student Status</th>
                   <th>Fee Status</th>
                   <th>Balance Left</th>
-                  <th style={{ minWidth: "280px" }}>Actions</th>
+                  <th style={{ minWidth: "200px" }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -125,12 +132,38 @@ const AdminApplications = () => {
                       <td>{app.fullname}</td>
                       <td>{app.course}</td>
                       <td>
-                        <span className={`badge ${app.status === 'Accepted' ? 'bg-success' : app.status === 'Rejected' ? 'bg-danger' : app.status === 'Completed' ? 'bg-info text-dark' : 'bg-warning text-dark'}`}>
-                          {app.status}
+                        <span className={`badge ${
+                          app.status === 'Accepted' ? 'bg-success' : 
+                          app.status === 'Rejected' ? 'bg-danger' : 'bg-warning text-dark'
+                        }`}>
+                          {app.status || 'Pending'}
                         </span>
                       </td>
                       <td>
-                        <span className={`badge ${app.fee_status === 'Completed' ? 'bg-success' : 'bg-warning text-dark'}`}>
+                        {/* Student Status Dropdown */}
+                        {app.status === "Accepted" ? (
+                          <select
+                            className={`form-select form-select-sm fw-bold ${
+                              (app.student_status || "In School") === "Completed" ? "border-success text-success" :
+                              (app.student_status || "In School") === "Dropped Out" ? "border-danger text-danger" :
+                              "border-primary text-primary"
+                            }`}
+                            value={app.student_status || "In School"}
+                            onChange={(e) => updateStatus(app.id, e.target.value)}
+                          >
+                            <option value="In School">In School</option>
+                            <option value="Completed">Completed</option>
+                            <option value="Dropped Out">Dropped Out</option>
+                          </select>
+                        ) : (
+                          <span className="text-muted small">N/A</span>
+                        )}
+                      </td>
+                      <td>
+                        <span className={`badge ${
+                          app.fee_status === 'Cleared' ? 'bg-success' : 
+                          app.fee_status === 'Arrears' ? 'bg-danger' : 'bg-warning text-dark'
+                        }`}>
                           {app.fee_status || 'Pending'}
                         </span>
                       </td>
@@ -144,6 +177,7 @@ const AdminApplications = () => {
                             onClick={() => { 
                               setSelectedApp(app); 
                               setTotalFeeInput(app.total_fee || ""); 
+                              setPaymentInput("");
                             }}
                             data-bs-toggle="modal"
                             data-bs-target="#viewApplicationModal"
@@ -155,7 +189,6 @@ const AdminApplications = () => {
                             <>
                               <button
                                 className="btn btn-success btn-sm"
-                                disabled={Number(app.remaining_vacancies) <= 0}
                                 onClick={() => updateStatus(app.id, "Accepted")}
                               >
                                 Accept
@@ -168,31 +201,13 @@ const AdminApplications = () => {
                               </button>
                             </>
                           )}
-
-                          {app.status === "Accepted" && (
-                            <select
-                              className="form-select form-select-sm border-secondary text-secondary fw-semibold"
-                              style={{ width: "135px" }}
-                              onChange={(e) => {
-                                if (e.target.value) {
-                                  updateStatus(app.id, e.target.value);
-                                  e.target.value = "";
-                                }
-                              }}
-                              defaultValue=""
-                            >
-                              <option value="" disabled>Update Status</option>
-                              <option value="Completed">Completed</option>
-                              <option value="Dropped">Dropped</option>
-                            </select>
-                          )}
                         </div>
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="7" className="text-center py-4 text-muted">No applications found.</td>
+                    <td colSpan="8" className="text-center py-4 text-muted">No applications found.</td>
                   </tr>
                 )}
               </tbody>
@@ -215,23 +230,30 @@ const AdminApplications = () => {
             <div className="modal-body p-4 bg-light">
               {selectedApp ? (
                 <div className="row g-3">
-                  <div className="col-md-6">
+                  <div className="col-md-4">
                     <label className="fw-bold text-muted small">Course</label>
                     <div className="p-2 bg-white rounded border">{selectedApp.course}</div>
                   </div>
-                  <div className="col-md-6">
+                  <div className="col-md-4">
                     <label className="fw-bold text-muted small">Application Status</label>
                     <div className="p-2 bg-white rounded border fw-bold">{selectedApp.status}</div>
                   </div>
+                  <div className="col-md-4">
+                    <label className="fw-bold text-muted small">Student Status</label>
+                    <div className="p-2 bg-white rounded border fw-bold text-primary">
+                      {selectedApp.student_status || "In School"}
+                    </div>
+                  </div>
 
-                  {/* Manual Fee Input Section */}
                   <div className="col-12 mt-3">
                     <div className="p-3 border rounded bg-white shadow-sm">
-                      <h6 className="fw-bold text-success mb-3"><i className="bi bi-wallet2 me-2"></i> Manual Fee Ledger (KSH)</h6>
+                      <h6 className="fw-bold text-success mb-3">
+                        <i className="bi bi-wallet2 me-2"></i> Fee Ledger (KSH)
+                      </h6>
                       
                       <div className="row g-2 align-items-end">
                         <div className="col-md-4">
-                          <label className="small text-muted">Type Total Course Fee</label>
+                          <label className="small text-muted">Total Course Fee</label>
                           <input 
                             type="number" 
                             className="form-control form-control-sm" 
@@ -249,7 +271,12 @@ const AdminApplications = () => {
                         <div className="col-md-4">
                           <label className="small text-muted">Fee Status</label>
                           <div className="p-1 bg-light border rounded fw-bold">
-                            {selectedApp.fee_status || 'Pending'}
+                            <span className={`badge ${
+                              selectedApp.fee_status === 'Cleared' ? 'bg-success' : 
+                              selectedApp.fee_status === 'Arrears' ? 'bg-danger' : 'bg-warning text-dark'
+                            }`}>
+                              {selectedApp.fee_status || 'Pending'}
+                            </span>
                           </div>
                         </div>
 

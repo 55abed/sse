@@ -5,9 +5,12 @@ import axios from "axios";
 const Application = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const course = searchParams.get("course");
+  
+  // Clean and decode the course parameter properly
+  const rawCourse = searchParams.get("course");
+  const course = rawCourse ? decodeURIComponent(rawCourse).trim() : "";
 
-  const [vacancies, setVacancies] = useState(0);
+  const [vacancies, setVacancies] = useState(10); // Default to available slots
   const [loadingVacancies, setLoadingVacancies] = useState(true);
 
   const [hasSubmitted, setHasSubmitted] = useState(false);
@@ -67,21 +70,34 @@ const Application = () => {
     }
   }, [checkStatus]);
 
-  // Fetch vacancies count
+  // Fetch vacancies count safely
   useEffect(() => {
-    if (!course) return;
     setLoadingVacancies(true);
+
+    if (!course) {
+      // If no course in query param, don't lock the form completely
+      setVacancies(10);
+      setLoadingVacancies(false);
+      return;
+    }
+
     axios
       .get(`https://abedhiggs.alwaysdata.net/sseapis/getvacancies.php?course=${encodeURIComponent(course)}`)
       .then((res) => {
-        if (res.data && res.data.success) {
+        if (res.data && res.data.success && typeof res.data.vacancies === "number") {
           setVacancies(res.data.vacancies);
         } else {
-          setVacancies(0);
+          // Fallback if course row doesn't exist yet
+          setVacancies(10);
         }
       })
-      .catch(() => setVacancies(0))
-      .finally(() => setLoadingVacancies(false));
+      .catch((err) => {
+        console.error("Failed to fetch vacancies:", err);
+        setVacancies(10); // Prevent blocking UI on network failure
+      })
+      .finally(() => {
+        setLoadingVacancies(false);
+      });
   }, [course]);
 
   // Handle Form Inputs
@@ -280,7 +296,7 @@ const Application = () => {
                     <button type="button" className="btn btn-secondary rounded-pill px-4" onClick={() => navigate(-1)}>
                       Cancel
                     </button>
-                    <button type="submit" className="btn btn-success rounded-pill px-5" disabled={vacancies <= 0}>
+                    <button type="submit" className="btn btn-success rounded-pill px-5" disabled={loadingVacancies || vacancies <= 0}>
                       Submit Application
                     </button>
                   </div>
